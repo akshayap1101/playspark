@@ -2,7 +2,7 @@ import { useMemo, useState } from 'react'
 import FilterPanel from './components/FilterPanel.jsx'
 import IdeaCard from './components/IdeaCard.jsx'
 import FeedbackButtons from './components/FeedbackButtons.jsx'
-import { pickIdea, recordFeedback, ideaCountForFilters, addCustomIdea } from './lib/recommend.js'
+import { pickIdea, recordFeedback, ideaCountForFilters, recordShown, getRecentTitles } from './lib/recommend.js'
 import { fetchAiIdea } from './lib/aiFetch.js'
 import { logFeedbackToCloud } from './firebase.js'
 
@@ -28,15 +28,20 @@ export default function App() {
     setError(null)
     setFeedbackGiven(null)
 
-    let next = pickIdea(filters)
+    // AI-first: always try to generate a brand-new idea for maximum variety.
+    // Silently falls back to the curated set if no AI key is configured yet,
+    // or if the request fails for any reason — the parent never sees an error
+    // for this, it just gets a curated idea instead.
+    let next = await fetchAiIdea({ ...filters, excludeTitles: getRecentTitles() })
     if (!next) {
-      next = await fetchAiIdea({ ...filters, excludeTitles: [] })
-      if (next) addCustomIdea(next)
+      next = pickIdea(filters)
+    } else {
+      recordShown(next)
     }
 
     setLoading(false)
     if (!next) {
-      setError("No ideas match those filters yet — try widening them, or check back after adding an AI key.")
+      setError('No ideas match those filters yet — try widening them.')
       return
     }
     setIdea(next)
@@ -75,7 +80,7 @@ export default function App() {
               ← Change filters
             </button>
 
-            {loading && <p className="loading-text">Finding something fun…</p>}
+            {loading && <p className="loading-text">Coming up with something new…</p>}
             {!loading && idea && <IdeaCard idea={idea} />}
 
             {!loading && idea && (
@@ -89,7 +94,7 @@ export default function App() {
           </div>
         )}
 
-        {loading && step === 'filter' && <p className="loading-text">Finding something fun…</p>}
+        {loading && step === 'filter' && <p className="loading-text">Coming up with something new…</p>}
         {error && <p className="error-text">{error}</p>}
       </div>
     </div>

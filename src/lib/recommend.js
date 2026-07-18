@@ -28,13 +28,25 @@ export function getFeedbackMap() {
   return readJSON(FEEDBACK_KEY, {})
 }
 
-export function getRecentIds() {
+function getRecentEntries() {
   return readJSON(RECENT_KEY, [])
 }
 
-function pushRecent(id) {
-  const recent = getRecentIds()
-  const next = [id, ...recent.filter((r) => r !== id)].slice(0, RECENT_LIMIT)
+export function getRecentIds() {
+  return getRecentEntries().map((e) => e.id)
+}
+
+export function getRecentTitles() {
+  return getRecentEntries().map((e) => e.title)
+}
+
+/**
+ * Records that an idea (curated, custom, or AI-generated) was just shown,
+ * so it's deprioritized next pick and excluded from the AI's next prompt.
+ */
+export function recordShown(idea) {
+  const recent = getRecentEntries()
+  const next = [{ id: idea.id, title: idea.title }, ...recent.filter((r) => r.id !== idea.id)].slice(0, RECENT_LIMIT)
   writeJSON(RECENT_KEY, next)
 }
 
@@ -97,7 +109,7 @@ export function pickIdea(filters) {
   const pool = fresh.length > 0 ? fresh : matches
 
   const chosen = weightedPick(pool, feedbackMap)
-  pushRecent(chosen.id)
+  recordShown(chosen)
   return chosen
 }
 

@@ -9,18 +9,19 @@ Two screens total: filters, and the idea itself. No accounts, no sign-up.
 
 ## How it works
 
-- **56 curated ideas** ship with the app, covering every age band from 0.6 to
-  15, tagged by type and whether a parent needs to help. This is the default
-  source and works with zero setup.
+- **AI-first idea generation**: every "Get an idea" click calls a small
+  Netlify serverless function that asks Claude, GPT, or Gemini (whichever key
+  you've set) for a brand-new idea matching the current age, type, and
+  assistance filters — so ideas stay varied instead of repeating. It's told
+  what's been shown recently and asked to avoid repeating it.
+- **56 curated ideas ship as a safety net**: if no AI key is set yet, or a
+  request fails for any reason, the app silently falls back to the curated
+  library instead of showing an error. Nothing breaks without a key — you
+  just get curated ideas until you add one.
 - **Feedback loop**: thumbs up/down are stored in the browser (`localStorage`)
-  and used to weight future picks for that child. Optionally also logged to
-  Firebase Firestore if you connect a project, so feedback isn't lost if
-  the browser storage is cleared.
-- **AI top-up**: if every curated idea for a given filter combination has
-  already been shown, the app calls a small Netlify serverless function that
-  asks Claude, GPT, or Gemini (whichever key you've set) for one new idea in
-  the same age/type/assistance shape. This is entirely optional — without a
-  key, the app just keeps reusing the curated set.
+  and used to weight future curated picks for that child. Optionally also
+  logged to Firebase Firestore if you connect a project, so feedback isn't
+  lost if the browser storage is cleared.
 - Gender is included as a filter per the original request, but it doesn't
   change which ideas are shown — the dataset is intentionally gender-neutral.
   It's there in case you want to extend it later.
@@ -60,17 +61,22 @@ service cloud.firestore {
 }
 ```
 
-## Connect an AI provider (optional, for fresh ideas)
+## Connect an AI provider (recommended — this is what makes ideas feel varied)
 
-Pick one — you don't need all three:
+Without a key, the app quietly falls back to the 56 curated ideas on every
+click. Adding one of these turns on live generation, so ideas stop repeating:
 
-- **Claude**: get a key at [console.anthropic.com](https://console.anthropic.com)
-- **GPT**: get a key at [platform.openai.com](https://platform.openai.com)
-- **Gemini**: get a key at [aistudio.google.com](https://aistudio.google.com)
+- **Claude**: get a key at [console.anthropic.com](https://console.anthropic.com) — cheapest/fastest option used here is `claude-3-5-haiku`, a few tenths of a cent per idea
+- **GPT**: get a key at [platform.openai.com](https://platform.openai.com) — uses `gpt-4o-mini`
+- **Gemini**: get a key at [aistudio.google.com](https://aistudio.google.com) — uses `gemini-1.5-flash`, and Google's free tier is generous enough to run this app on for free
 
-These are used server-side only (in the Netlify function), never exposed to
-the browser. Set them in Netlify's dashboard, not in `.env` — see deploy
-steps below.
+Pick one — you don't need all three. These are used server-side only (in the
+Netlify function), never exposed to the browser. Set them in Netlify's
+dashboard, not in `.env` — see deploy steps below.
+
+Every "Get an idea" click now makes one API call, so cost scales with usage —
+for a single family clicking a few times a day, all three options land well
+under a dollar a month.
 
 ## Deploy to Netlify
 
