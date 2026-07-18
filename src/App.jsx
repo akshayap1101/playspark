@@ -1,8 +1,8 @@
-import { useMemo, useState } from 'react'
+import { useState } from 'react'
 import FilterPanel from './components/FilterPanel.jsx'
 import IdeaCard from './components/IdeaCard.jsx'
 import FeedbackButtons from './components/FeedbackButtons.jsx'
-import { pickIdea, recordFeedback, ideaCountForFilters, recordShown, getRecentTitles } from './lib/recommend.js'
+import { pickIdea, recordFeedback, recordShown, getRecentTitles } from './lib/recommend.js'
 import { fetchAiIdea } from './lib/aiFetch.js'
 import { logFeedbackToCloud } from './firebase.js'
 
@@ -20,8 +20,6 @@ export default function App() {
   const [loading, setLoading] = useState(false)
   const [error, setError] = useState(null)
   const [feedbackGiven, setFeedbackGiven] = useState(null)
-
-  const matchCount = useMemo(() => ideaCountForFilters(filters), [filters])
 
   async function handleGetIdea() {
     setLoading(true)
@@ -70,7 +68,6 @@ export default function App() {
             filters={filters}
             onChange={setFilters}
             onSubmit={handleGetIdea}
-            matchCount={matchCount}
           />
         )}
 

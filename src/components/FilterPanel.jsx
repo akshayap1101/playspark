@@ -45,7 +45,7 @@ function Segmented({ name, options, value, onChange }) {
   )
 }
 
-export default function FilterPanel({ filters, onChange, onSubmit, matchCount }) {
+export default function FilterPanel({ filters, onChange, onSubmit }) {
   const [age, setAge] = useState(filters.age)
 
   const update = (patch) => onChange({ ...filters, ...patch })
@@ -111,9 +111,6 @@ export default function FilterPanel({ filters, onChange, onSubmit, matchCount })
       <button className="primary-btn" onClick={onSubmit}>
         Get an idea
       </button>
-      {typeof matchCount === 'number' && (
-        <p className="match-hint">{matchCount} idea{matchCount === 1 ? '' : 's'} match right now</p>
-      )}
     </div>
   )
 }
