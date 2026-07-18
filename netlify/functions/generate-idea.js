@@ -16,11 +16,15 @@ function buildUserPrompt({ age, type, assistance, excludeTitles }) {
 }
 
 function extractJson(text) {
-  const match = text.match(/\{[\s\S]*\}/)
-  if (!match) return null
+  if (!text) return null
+  // Strip markdown code fences some models wrap JSON in, e.g. ```json ... ```
+  const cleaned = text.trim().replace(/^```(?:json)?\s*/i, '').replace(/```\s*$/, '').trim()
+  const match = cleaned.match(/\{[\s\S]*\}/)
+  const candidate = match ? match[0] : cleaned
   try {
-    return JSON.parse(match[0])
-  } catch {
+    return JSON.parse(candidate)
+  } catch (err) {
+    console.error('Could not parse AI response as JSON. Raw text:', text)
     return null
   }
 }
@@ -85,7 +89,7 @@ async function callGemini(userPrompt) {
   return extractJson(text)
 }
 
-exports.handler = async (event) => {
+export const handler = async (event) => {
   if (event.httpMethod !== 'POST') {
     return { statusCode: 405, body: 'Method Not Allowed' }
   }
