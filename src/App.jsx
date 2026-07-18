@@ -2,8 +2,7 @@ import { useState } from 'react'
 import FilterPanel from './components/FilterPanel.jsx'
 import IdeaCard from './components/IdeaCard.jsx'
 import FeedbackButtons from './components/FeedbackButtons.jsx'
-import { pickIdea, recordFeedback, recordShown, getRecentTitles } from './lib/recommend.js'
-import { fetchAiIdea } from './lib/aiFetch.js'
+import { pickIdea, recordFeedback } from './lib/recommend.js'
 import { logFeedbackToCloud } from './firebase.js'
 
 const DEFAULT_FILTERS = {
@@ -17,27 +16,18 @@ export default function App() {
   const [filters, setFilters] = useState(DEFAULT_FILTERS)
   const [step, setStep] = useState('filter') // 'filter' | 'idea'
   const [idea, setIdea] = useState(null)
-  const [loading, setLoading] = useState(false)
   const [error, setError] = useState(null)
   const [feedbackGiven, setFeedbackGiven] = useState(null)
 
-  async function handleGetIdea() {
-    setLoading(true)
+  function handleGetIdea() {
     setError(null)
     setFeedbackGiven(null)
 
-    // AI-first: always try to generate a brand-new idea for maximum variety.
-    // Silently falls back to the curated set if no AI key is configured yet,
-    // or if the request fails for any reason — the parent never sees an error
-    // for this, it just gets a curated idea instead.
-    let next = await fetchAiIdea({ ...filters, excludeTitles: getRecentTitles() })
-    if (!next) {
-      next = pickIdea(filters)
-    } else {
-      recordShown(next)
-    }
+    // Picks from the 200-idea curated library. Within the current filters,
+    // nothing repeats until every matching idea has been shown once — see
+    // lib/recommend.js for the cycling logic.
+    const next = pickIdea(filters)
 
-    setLoading(false)
     if (!next) {
       setError('No ideas match those filters yet — try widening them.')
       return
@@ -77,10 +67,9 @@ export default function App() {
               ← Change filters
             </button>
 
-            {loading && <p className="loading-text">Coming up with something new…</p>}
-            {!loading && idea && <IdeaCard idea={idea} />}
+            {idea && <IdeaCard idea={idea} />}
 
-            {!loading && idea && (
+            {idea && (
               <div className="idea-actions">
                 <FeedbackButtons given={feedbackGiven} onFeedback={handleFeedback} />
                 <button className="secondary-btn" onClick={handleGetIdea}>
@@ -91,7 +80,6 @@ export default function App() {
           </div>
         )}
 
-        {loading && step === 'filter' && <p className="loading-text">Coming up with something new…</p>}
         {error && <p className="error-text">{error}</p>}
       </div>
     </div>
